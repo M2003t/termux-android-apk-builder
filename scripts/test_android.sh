@@ -9,6 +9,13 @@ mkdir -p "$LOG_DIR"
 TIMESTAMP="$(date '+%Y-%m-%d_%H-%M-%S')"
 LOG_FILE="$LOG_DIR/android-validation_$TIMESTAMP.log"
 
+START_TIME="$(date +%s)"
+
+BUILD_STATUS="NOT RUN"
+VERIFY_STATUS="NOT RUN"
+INSTALL_STATUS="NOT RUN"
+SMOKE_STATUS="NOT RUN"
+
 exec > >(tee -a "$LOG_FILE") 2>&1
 
 echo "== Termux AppForge Full Android Validation =="
@@ -22,10 +29,12 @@ bash "$PROJECT_DIR/scripts/clean_android.sh"
 echo
 echo "[2/5] Building APK..."
 bash "$PROJECT_DIR/scripts/build_android.sh"
+BUILD_STATUS="PASS"
 
 echo
 echo "[3/5] Verifying APK artifact..."
 bash "$PROJECT_DIR/scripts/verify_android.sh"
+VERIFY_STATUS="PASS"
 
 echo
 echo "[4/5] Installing current build..."
@@ -36,14 +45,30 @@ echo "Complete the Android installation/update."
 echo "Then return to Termux and press Enter to continue."
 read -r
 
+INSTALL_STATUS="PASS"
+
 echo
 echo "[5/5] Running runtime smoke test..."
 bash "$PROJECT_DIR/scripts/smoke_android.sh"
+SMOKE_STATUS="PASS"
+
+END_TIME="$(date +%s)"
+DURATION="$((END_TIME - START_TIME))"
 
 echo
 echo "======================================"
+echo "VALIDATION SUMMARY"
+echo "======================================"
+echo "Build:              $BUILD_STATUS"
+echo "APK Verification:   $VERIFY_STATUS"
+echo "Install Checkpoint: $INSTALL_STATUS"
+echo "Runtime Smoke Test: $SMOKE_STATUS"
+echo "Duration:           ${DURATION}s"
+echo "Result:             PASS"
+echo "======================================"
+
+echo
 echo "FULL ANDROID VALIDATION PASSED"
 echo "Finished: $(date)"
 echo "Log saved to:"
 echo "$LOG_FILE"
-echo "======================================"
