@@ -1,5 +1,7 @@
 import raylib
 
+const buildId {.strdefine.} = "development"
+
 initWindow(800, 450, "Termux AppForge")
 
 while not windowShouldClose():
@@ -20,6 +22,14 @@ while not windowShouldClose():
     100,
     20,
     DARKGRAY
+  )
+
+  drawText(
+    "Build ID: " & buildId,
+    40,
+    160,
+    18,
+    GRAY
   )
 
   endDrawing()

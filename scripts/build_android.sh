@@ -55,6 +55,7 @@ nim c \
     --path:"$NAYLIB_PATH" \
     --path:"$SRC_DIR" \
     -d:AndroidNdk="$NDK" \
+    -d:buildId="$BUILD_ID" \
     --passC:"-I$NDK/sysroot/usr/include" \
     --out:"$LIB_DIR/libmain.so" \
     "$SRC_DIR/androidentry.nim"
