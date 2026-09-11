@@ -12,7 +12,7 @@
         android:required="true" />
 
     <application
-        android:label="Termux AppForge"
+        android:label="@string/app_name"
         android:hasCode="false"
         android:resizeableActivity="true">
 

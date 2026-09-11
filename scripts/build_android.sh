@@ -12,12 +12,14 @@ ANDROID_JAR="$HOME/android-sdk/android.jar"
 NAYLIB_PATH="$(find "$HOME/.nimble/pkgs2" -maxdepth 1 -type d -name 'naylib-*' | head -n 1)"
 
 LIB_DIR="$BUILD_DIR/lib/arm64-v8a"
+RES_DIR="$BUILD_DIR/resources"
 KEYSTORE="$LOCAL_DIR/debug.keystore"
 
 echo "== Termux AppForge Android Builder =="
 echo
 
 mkdir -p "$LIB_DIR"
+mkdir -p "$RES_DIR"
 mkdir -p "$LOCAL_DIR"
 
 if [ -z "$NAYLIB_PATH" ]; then
@@ -37,7 +39,7 @@ if [ ! -d "$NDK" ]; then
     exit 1
 fi
 
-echo "[1/5] Compiling Nim + Raylib..."
+echo "[1/6] Compiling Nim + Raylib..."
 
 nim c \
     --app:lib \
@@ -51,7 +53,14 @@ nim c \
     "$SRC_DIR/androidentry.nim"
 
 echo
-echo "[2/5] Creating APK..."
+echo "[2/6] Compiling Android resources..."
+
+aapt2 compile \
+    --dir "$ANDROID_DIR/res" \
+    -o "$RES_DIR"
+
+echo
+echo "[3/6] Creating APK..."
 
 rm -f \
     "$BUILD_DIR/unsigned.apk" \
@@ -61,6 +70,7 @@ rm -f \
 aapt2 link \
     --manifest "$ANDROID_DIR/AndroidManifest.xml" \
     -I "$ANDROID_JAR" \
+    "$RES_DIR"/*.flat \
     -o "$BUILD_DIR/unsigned.apk"
 
 (
@@ -69,14 +79,14 @@ aapt2 link \
 )
 
 echo
-echo "[3/5] Aligning APK..."
+echo "[4/6] Aligning APK..."
 
 zipalign -f 4 \
     "$BUILD_DIR/unsigned.apk" \
     "$BUILD_DIR/aligned.apk"
 
 echo
-echo "[4/5] Preparing signing key..."
+echo "[5/6] Preparing signing key..."
 
 if [ ! -f "$KEYSTORE" ]; then
     if [ -f "$HOME/.debug.keystore" ]; then
@@ -95,7 +105,7 @@ if [ ! -f "$KEYSTORE" ]; then
 fi
 
 echo
-echo "[5/5] Signing APK..."
+echo "[6/6] Signing APK..."
 
 apksigner sign \
     --ks "$KEYSTORE" \
