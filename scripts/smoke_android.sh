@@ -13,26 +13,27 @@ fail() {
 echo "== Termux AppForge Runtime Smoke Test =="
 echo
 
-echo "[1/2] Checking installed package..."
+echo "[1/1] Launching application..."
 
-PACKAGE_PATH="$(pm path "$PACKAGE" 2>/dev/null || true)"
+LAUNCH_OUTPUT="$(am start -W -n "$PACKAGE/$ACTIVITY" 2>&1)" || {
+    echo "$LAUNCH_OUTPUT"
+    fail "Android could not launch the application."
+}
 
-if [ -z "$PACKAGE_PATH" ]; then
-    fail "Package is not installed: $PACKAGE"
+echo "$LAUNCH_OUTPUT"
+
+if echo "$LAUNCH_OUTPUT" | grep -qiE \
+    'Error|Exception|does not exist|unable to resolve|Permission Denial'; then
+    fail "Android reported a launch error."
 fi
 
-echo "PASS: Package is installed"
-echo "$PACKAGE_PATH"
+if ! echo "$LAUNCH_OUTPUT" | grep -qiE \
+    'Status: ok|Activity:|ThisTime:|TotalTime:'; then
+    fail "Launch result could not be confirmed."
+fi
 
 echo
-echo "[2/2] Launching application..."
-
-am start \
-    -n "$PACKAGE/$ACTIVITY" \
-    >/dev/null 2>&1 \
-    || fail "Android could not launch the application."
-
-echo "PASS: Launch request accepted"
+echo "PASS: Application launch confirmed"
 
 echo
 echo "======================================"
