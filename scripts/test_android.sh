@@ -41,9 +41,26 @@ echo "[4/5] Installing current build..."
 bash "$PROJECT_DIR/scripts/install_android.sh"
 
 echo
-echo "Complete the Android installation/update."
-echo "Then return to Termux and press Enter to continue."
-read -r
+echo "Waiting for Android installer..."
+sleep 3
+
+echo
+echo "Complete the Android installation/update first."
+echo "Do NOT continue while the installer is still open."
+echo
+echo "After installation finishes, return to Termux."
+echo "Type: installed"
+echo
+
+while true; do
+    read -r INSTALL_CONFIRMATION
+
+    if [ "$INSTALL_CONFIRMATION" = "installed" ]; then
+        break
+    fi
+
+    echo "Please complete the installation and type: installed"
+done
 
 INSTALL_STATUS="PASS"
 
