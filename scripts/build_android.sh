@@ -13,10 +13,10 @@ NAYLIB_PATH="$(find "$HOME/.nimble/pkgs2" -maxdepth 1 -type d -name 'naylib-*' |
 
 LIB_DIR="$BUILD_DIR/lib/arm64-v8a"
 RES_DIR="$BUILD_DIR/resources"
+ASSETS_DIR="$BUILD_DIR/assets"
 KEYSTORE="$LOCAL_DIR/debug.keystore"
 
 BUILD_ID="$(date '+%Y%m%d-%H%M%S')"
-BUILD_ID_FILE="$ANDROID_DIR/assets/build_id.txt"
 
 echo "== Termux AppForge Android Builder =="
 echo "Build ID: $BUILD_ID"
@@ -24,10 +24,10 @@ echo
 
 mkdir -p "$LIB_DIR"
 mkdir -p "$RES_DIR"
+mkdir -p "$ASSETS_DIR"
 mkdir -p "$LOCAL_DIR"
-mkdir -p "$ANDROID_DIR/assets"
 
-echo "$BUILD_ID" > "$BUILD_ID_FILE"
+echo "$BUILD_ID" > "$ASSETS_DIR/build_id.txt"
 
 if [ -z "$NAYLIB_PATH" ]; then
     echo "ERROR: Naylib was not found."
@@ -77,7 +77,7 @@ rm -f \
 aapt2 link \
     --manifest "$ANDROID_DIR/AndroidManifest.xml" \
     -I "$ANDROID_JAR" \
-    -A "$ANDROID_DIR/assets" \
+    -A "$ASSETS_DIR" \
     "$RES_DIR"/*.flat \
     -o "$BUILD_DIR/unsigned.apk"
 
