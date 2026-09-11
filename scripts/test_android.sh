@@ -15,6 +15,7 @@ BUILD_STATUS="NOT RUN"
 VERIFY_STATUS="NOT RUN"
 INSTALL_STATUS="NOT RUN"
 SMOKE_STATUS="NOT RUN"
+BUILD_ID="UNKNOWN"
 
 exec > >(tee -a "$LOG_FILE") 2>&1
 
@@ -35,6 +36,8 @@ echo
 echo "[3/5] Verifying APK artifact..."
 bash "$PROJECT_DIR/scripts/verify_android.sh"
 VERIFY_STATUS="PASS"
+
+BUILD_ID="$(unzip -p "$PROJECT_DIR/build/Termux-AppForge.apk" assets/build_id.txt 2>/dev/null || true)"
 
 echo
 echo "[4/5] Installing current build..."
@@ -76,6 +79,7 @@ echo
 echo "======================================"
 echo "VALIDATION SUMMARY"
 echo "======================================"
+echo "Build ID:           $BUILD_ID"
 echo "Build:              $BUILD_STATUS"
 echo "APK Verification:   $VERIFY_STATUS"
 echo "Install Checkpoint: $INSTALL_STATUS"
