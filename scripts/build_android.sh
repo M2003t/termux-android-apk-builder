@@ -15,12 +15,19 @@ LIB_DIR="$BUILD_DIR/lib/arm64-v8a"
 RES_DIR="$BUILD_DIR/resources"
 KEYSTORE="$LOCAL_DIR/debug.keystore"
 
+BUILD_ID="$(date '+%Y%m%d-%H%M%S')"
+BUILD_ID_FILE="$ANDROID_DIR/assets/build_id.txt"
+
 echo "== Termux AppForge Android Builder =="
+echo "Build ID: $BUILD_ID"
 echo
 
 mkdir -p "$LIB_DIR"
 mkdir -p "$RES_DIR"
 mkdir -p "$LOCAL_DIR"
+mkdir -p "$ANDROID_DIR/assets"
+
+echo "$BUILD_ID" > "$BUILD_ID_FILE"
 
 if [ -z "$NAYLIB_PATH" ]; then
     echo "ERROR: Naylib was not found."
@@ -70,6 +77,7 @@ rm -f \
 aapt2 link \
     --manifest "$ANDROID_DIR/AndroidManifest.xml" \
     -I "$ANDROID_JAR" \
+    -A "$ANDROID_DIR/assets" \
     "$RES_DIR"/*.flat \
     -o "$BUILD_DIR/unsigned.apk"
 
@@ -120,6 +128,7 @@ apksigner verify "$BUILD_DIR/Termux-AppForge.apk"
 echo
 echo "======================================"
 echo "BUILD SUCCESSFUL"
+echo "Build ID: $BUILD_ID"
 echo
 echo "APK:"
 echo "$BUILD_DIR/Termux-AppForge.apk"
