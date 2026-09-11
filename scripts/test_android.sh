@@ -2,8 +2,18 @@
 set -e
 
 PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+LOG_DIR="$PROJECT_DIR/local_data/logs"
+
+mkdir -p "$LOG_DIR"
+
+TIMESTAMP="$(date '+%Y-%m-%d_%H-%M-%S')"
+LOG_FILE="$LOG_DIR/android-validation_$TIMESTAMP.log"
+
+exec > >(tee -a "$LOG_FILE") 2>&1
 
 echo "== Termux AppForge Full Android Validation =="
+echo "Started: $(date)"
+echo "Log: $LOG_FILE"
 echo
 
 echo "[1/5] Cleaning build environment..."
@@ -33,4 +43,7 @@ bash "$PROJECT_DIR/scripts/smoke_android.sh"
 echo
 echo "======================================"
 echo "FULL ANDROID VALIDATION PASSED"
+echo "Finished: $(date)"
+echo "Log saved to:"
+echo "$LOG_FILE"
 echo "======================================"
