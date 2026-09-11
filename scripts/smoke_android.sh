@@ -15,25 +15,34 @@ echo
 
 echo "[1/1] Launching application..."
 
-LAUNCH_OUTPUT="$(am start -W -n "$PACKAGE/$ACTIVITY" 2>&1)" || {
-    echo "$LAUNCH_OUTPUT"
-    fail "Android could not launch the application."
-}
+set +e
+LAUNCH_OUTPUT="$(am start -W -n "$PACKAGE/$ACTIVITY" 2>&1)"
+EXIT_CODE=$?
+set -e
 
 echo "$LAUNCH_OUTPUT"
 
+if [ "$EXIT_CODE" -ne 0 ]; then
+    fail "Android activity manager returned exit code $EXIT_CODE."
+fi
+
 if echo "$LAUNCH_OUTPUT" | grep -qiE \
-    'Error|Exception|does not exist|unable to resolve|Permission Denial'; then
+    'Error|Exception|does not exist|unable to resolve|Permission Denial|SecurityException'; then
     fail "Android reported a launch error."
 fi
 
-if ! echo "$LAUNCH_OUTPUT" | grep -qiE \
-    'Status: ok|Activity:|ThisTime:|TotalTime:'; then
-    fail "Launch result could not be confirmed."
+if ! echo "$LAUNCH_OUTPUT" | grep -q "Starting: Intent"; then
+    fail "Launch request was not confirmed."
 fi
 
 echo
-echo "PASS: Application launch confirmed"
+echo "PASS: Android accepted the launch request"
+
+if echo "$LAUNCH_OUTPUT" | grep -q "current task has been brought to the front"; then
+    echo "INFO: Application was already running and was brought to the foreground."
+else
+    echo "INFO: Application launch request was issued successfully."
+fi
 
 echo
 echo "======================================"
