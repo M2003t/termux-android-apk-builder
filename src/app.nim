@@ -5,32 +5,33 @@ const buildId {.strdefine.} = "development"
 
 initWindow(800, 450, "Termux AppForge")
 
-var permissionStatus = termuxPermissionStatus()
+var packageStatus = 0
+var definitionStatus = 0
+var permissionStatus = 0
+
 var requestResult = -999
+var settingsResult = -999
 var commandResult = -999
-var commandTested = false
 
-let requestButton = Rectangle(
-  x: 40,
-  y: 245,
-  width: 330,
-  height: 55
-)
+let requestButton =
+  Rectangle(x: 40, y: 285, width: 220, height: 50)
 
-let settingsButton = Rectangle(
-  x: 40,
-  y: 320,
-  width: 330,
-  height: 55
-)
+let settingsButton =
+  Rectangle(x: 290, y: 285, width: 220, height: 50)
+
+let commandButton =
+  Rectangle(x: 540, y: 285, width: 220, height: 50)
 
 while not windowShouldClose():
 
-  permissionStatus = termuxPermissionStatus()
+  packageStatus =
+    termuxPackageStatus()
 
-  if permissionStatus == 1 and not commandTested:
-    commandResult = runTermuxTest()
-    commandTested = true
+  definitionStatus =
+    termuxPermissionDefinitionStatus()
+
+  permissionStatus =
+    termuxPermissionStatus()
 
   let mouse = getMousePosition()
 
@@ -40,90 +41,115 @@ while not windowShouldClose():
   let settingsHover =
     checkCollisionPointRec(mouse, settingsButton)
 
+  let commandHover =
+    checkCollisionPointRec(mouse, commandButton)
+
   if isMouseButtonPressed(MouseButton.Left):
 
-    if requestHover and permissionStatus == 0:
-      requestResult = requestTermuxPermission()
+    if requestHover:
+      requestResult =
+        requestTermuxPermission()
 
-    if settingsHover and permissionStatus == 0:
-      discard openAppSettings()
+    if settingsHover:
+      settingsResult =
+        openAppSettings()
+
+    if commandHover:
+      commandResult =
+        runTermuxTest()
 
   beginDrawing()
   clearBackground(RAYWHITE)
 
   drawText(
-    "Termux AppForge",
-    40, 40, 32, BLACK
-  )
-
-  drawText(
-    "Native Android development on your phone.",
-    40, 100, 20, DARKGRAY
+    "Termux AppForge Diagnostics",
+    30, 25, 28, BLACK
   )
 
   drawText(
     "Build ID: " & buildId,
-    40, 155, 18, GRAY
+    30, 70, 17, GRAY
   )
 
-  if permissionStatus == 1:
+  drawText(
+    "Termux package visible:       " &
+    $packageStatus,
+    30, 115, 19, BLACK
+  )
 
-    if commandResult == 0:
-      drawText(
-        "Termux Connected",
-        40, 210, 22, DARKGREEN
-      )
-    else:
-      drawText(
-        "Termux command error: " & $commandResult,
-        40, 210, 20, RED
-      )
+  drawText(
+    "RUN_COMMAND defined:          " &
+    $definitionStatus,
+    30, 145, 19, BLACK
+  )
 
-  elif permissionStatus == 0:
+  drawText(
+    "RUN_COMMAND granted:          " &
+    $permissionStatus,
+    30, 175, 19, BLACK
+  )
 
-    drawText(
-      "Termux permission required",
-      40, 205, 20, ORANGE
-    )
+  drawText(
+    "Permission request result:    " &
+    $requestResult,
+    30, 205, 19, DARKGRAY
+  )
 
-    drawRectangle(
-      int32(requestButton.x),
-      int32(requestButton.y),
-      int32(requestButton.width),
-      int32(requestButton.height),
-      if requestHover: GRAY else: LIGHTGRAY
-    )
+  drawText(
+    "Open settings result:         " &
+    $settingsResult,
+    30, 235, 19, DARKGRAY
+  )
 
-    drawText(
-      "Request Termux Permission",
-      60, 262, 20, BLACK
-    )
+  drawText(
+    "Command result:               " &
+    $commandResult,
+    430, 235, 19, DARKGRAY
+  )
 
-    drawRectangle(
-      int32(settingsButton.x),
-      int32(settingsButton.y),
-      int32(settingsButton.width),
-      int32(settingsButton.height),
-      if settingsHover: GRAY else: LIGHTGRAY
-    )
+  drawRectangle(
+    int32(requestButton.x),
+    int32(requestButton.y),
+    int32(requestButton.width),
+    int32(requestButton.height),
+    if requestHover: GRAY else: LIGHTGRAY
+  )
 
-    drawText(
-      "Open App Settings",
-      60, 337, 20, BLACK
-    )
+  drawText(
+    "Request Permission",
+    55, 301, 18, BLACK
+  )
 
-    if requestResult != -999:
-      drawText(
-        "Request result: " & $requestResult,
-        400, 262, 18, DARKGRAY
-      )
+  drawRectangle(
+    int32(settingsButton.x),
+    int32(settingsButton.y),
+    int32(settingsButton.width),
+    int32(settingsButton.height),
+    if settingsHover: GRAY else: LIGHTGRAY
+  )
 
-  else:
+  drawText(
+    "Open App Settings",
+    310, 301, 18, BLACK
+  )
 
-    drawText(
-      "Permission check error: " & $permissionStatus,
-      40, 210, 20, RED
-    )
+  drawRectangle(
+    int32(commandButton.x),
+    int32(commandButton.y),
+    int32(commandButton.width),
+    int32(commandButton.height),
+    if commandHover: GRAY else: LIGHTGRAY
+  )
+
+  drawText(
+    "Test RUN_COMMAND",
+    560, 301, 18, BLACK
+  )
+
+  drawText(
+    "1 = yes/granted   0 = no/denied   negative = diagnostic error",
+    30, 370, 17, GRAY
+  )
 
   endDrawing()
 
