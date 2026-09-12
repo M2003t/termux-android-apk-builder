@@ -57,6 +57,7 @@ nim c \
     -d:AndroidNdk="$NDK" \
     -d:buildId="$BUILD_ID" \
     --passC:"-I$NDK/sysroot/usr/include" \
+    --passC:"-I$NDK/sources/android/native_app_glue" \
     --out:"$LIB_DIR/libmain.so" \
     "$SRC_DIR/androidentry.nim"
 

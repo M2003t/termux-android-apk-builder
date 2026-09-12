@@ -367,3 +367,102 @@ int termux_run_test(void) {
 
     return 0;
 }
+
+int termux_open_app_settings(void) {
+    struct android_app *app = GetAndroidApp();
+
+    if (!app || !app->activity)
+        return -1;
+
+    JavaVM *vm = app->activity->vm;
+    jobject activity = app->activity->clazz;
+
+    int attached = 0;
+    JNIEnv *env = get_env(vm, &attached);
+
+    if (!env)
+        return -2;
+
+    jclass intentClass =
+        (*env)->FindClass(env, "android/content/Intent");
+
+    jclass uriClass =
+        (*env)->FindClass(env, "android/net/Uri");
+
+    if (!intentClass || !uriClass || check_exception(env))
+        return -3;
+
+    jmethodID parseUri =
+        (*env)->GetStaticMethodID(
+            env,
+            uriClass,
+            "parse",
+            "(Ljava/lang/String;)Landroid/net/Uri;"
+        );
+
+    jstring packageUri =
+        (*env)->NewStringUTF(
+            env,
+            "package:com.m2003t.termuxappforge"
+        );
+
+    jobject uri =
+        (*env)->CallStaticObjectMethod(
+            env,
+            uriClass,
+            parseUri,
+            packageUri
+        );
+
+    jmethodID intentCtor =
+        (*env)->GetMethodID(
+            env,
+            intentClass,
+            "<init>",
+            "(Ljava/lang/String;Landroid/net/Uri;)V"
+        );
+
+    jstring action =
+        (*env)->NewStringUTF(
+            env,
+            "android.settings.APPLICATION_DETAILS_SETTINGS"
+        );
+
+    jobject intent =
+        (*env)->NewObject(
+            env,
+            intentClass,
+            intentCtor,
+            action,
+            uri
+        );
+
+    if (check_exception(env))
+        return -4;
+
+    jclass activityClass =
+        (*env)->GetObjectClass(env, activity);
+
+    jmethodID startActivity =
+        (*env)->GetMethodID(
+            env,
+            activityClass,
+            "startActivity",
+            "(Landroid/content/Intent;)V"
+        );
+
+    (*env)->CallVoidMethod(
+        env,
+        activity,
+        startActivity,
+        intent
+    );
+
+    if (check_exception(env))
+        return -5;
+
+    if (attached)
+        (*vm)->DetachCurrentThread(vm);
+
+    return 0;
+}

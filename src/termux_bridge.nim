@@ -9,11 +9,17 @@ proc termuxRequestPermissionNative(): cint
 proc termuxRunTestNative(): cint
   {.importc: "termux_run_test".}
 
-proc hasTermuxPermission*(): bool =
-  termuxPermissionStatusNative() == 1
+proc termuxOpenAppSettingsNative(): cint
+  {.importc: "termux_open_app_settings".}
 
-proc requestTermuxPermission*(): bool =
-  termuxRequestPermissionNative() == 0
+proc termuxPermissionStatus*(): int =
+  int(termuxPermissionStatusNative())
 
-proc runTermuxTest*(): bool =
-  termuxRunTestNative() == 0
+proc requestTermuxPermission*(): int =
+  int(termuxRequestPermissionNative())
+
+proc runTermuxTest*(): int =
+  int(termuxRunTestNative())
+
+proc openAppSettings*(): int =
+  int(termuxOpenAppSettingsNative())
