@@ -171,7 +171,7 @@ termux_activity = """        <activity
             android:name=".app.TermuxActivity\""""
 
 appforge_activity = """        <activity
-            android:name="com.appforge.AppForgeActivity"
+            android:name="com.termux.app.AppForgeActivity"
             android:exported="true"
             android:label="Termux AppForge"
             android:theme="@style/Theme.TermuxActivity.DayNight.NoActionBar">
