@@ -163,6 +163,18 @@ if application_id_line not in gradle_text:
         1
     )
 
+gradle_text = gradle_text.replace(
+    "versionCode 118",
+    "versionCode 1",
+    1
+)
+
+gradle_text = gradle_text.replace(
+    'versionName "0.118.0"',
+    'versionName "0.1.0-alpha"',
+    1
+)
+
 app_gradle.write_text(gradle_text)
 
 print(
