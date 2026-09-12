@@ -21,6 +21,8 @@ import com.termux.terminal.TerminalSessionClient;
 import com.termux.view.TerminalView;
 import com.termux.view.TerminalViewClient;
 
+import java.io.File;
+
 public class AppForgeActivity extends Activity
     implements TerminalViewClient, TerminalSessionClient {
 
@@ -37,26 +39,36 @@ public class AppForgeActivity extends Activity
 
         createInterface();
 
-        TermuxInstaller.setupBootstrapIfNeeded(
-            this,
+        terminalView.post(
             this::startTerminal
         );
     }
 
     private void createInterface() {
-        LinearLayout root = new LinearLayout(this);
+        LinearLayout root =
+            new LinearLayout(this);
 
-        root.setOrientation(LinearLayout.VERTICAL);
-        root.setBackgroundColor(Color.rgb(12, 14, 18));
+        root.setOrientation(
+            LinearLayout.VERTICAL
+        );
 
-        TextView header = new TextView(this);
+        root.setBackgroundColor(
+            Color.rgb(12, 14, 18)
+        );
+
+        TextView header =
+            new TextView(this);
 
         header.setText(
             "Termux AppForge   •   Volume Down = Ctrl"
         );
 
-        header.setTextColor(Color.WHITE);
+        header.setTextColor(
+            Color.WHITE
+        );
+
         header.setTextSize(14);
+
         header.setPadding(
             dp(14),
             dp(10),
@@ -65,11 +77,21 @@ public class AppForgeActivity extends Activity
         );
 
         terminalView =
-            new TerminalView(this, null);
+            new TerminalView(
+                this,
+                null
+            );
 
-        terminalView.setTerminalViewClient(this);
+        terminalView.setTerminalViewClient(
+            this
+        );
+
         terminalView.setTextSize(18);
-        terminalView.setBackgroundColor(Color.BLACK);
+
+        terminalView.setBackgroundColor(
+            Color.BLACK
+        );
+
         terminalView.setFocusable(true);
         terminalView.setFocusableInTouchMode(true);
 
@@ -98,49 +120,56 @@ public class AppForgeActivity extends Activity
             return;
         }
 
-        String files =
-            getFilesDir().getAbsolutePath();
+        File homeDirectory =
+            new File(
+                getFilesDir(),
+                "home"
+            );
 
-        String prefix =
-            files + "/usr";
+        File tempDirectory =
+            new File(
+                getCacheDir(),
+                "tmp"
+            );
+
+        if (!homeDirectory.exists()) {
+            homeDirectory.mkdirs();
+        }
+
+        if (!tempDirectory.exists()) {
+            tempDirectory.mkdirs();
+        }
 
         String home =
-            files + "/home";
+            homeDirectory.getAbsolutePath();
+
+        String temp =
+            tempDirectory.getAbsolutePath();
 
         String shell =
-            prefix + "/bin/bash";
+            "/system/bin/sh";
 
-        String[] environment = new String[] {
-            "HOME=" + home,
-            "PREFIX=" + prefix,
-            "TMPDIR=" + prefix + "/tmp",
-            "PATH=" +
-                prefix + "/bin:" +
-                prefix + "/bin/applets",
-            "LD_LIBRARY_PATH=" + prefix + "/lib",
-            "SHELL=" + shell,
-            "TERM=xterm-256color",
-            "COLORTERM=truecolor",
-            "LANG=en_US.UTF-8"
-        };
+        String[] environment =
+            new String[] {
+                "HOME=" + home,
+                "TMPDIR=" + temp,
+                "PATH=/system/bin:/system/xbin",
+                "SHELL=" + shell,
+                "TERM=xterm-256color",
+                "COLORTERM=truecolor",
+                "LANG=C.UTF-8"
+            };
 
         terminalSession =
             new TerminalSession(
                 shell,
                 home,
-                new String[] {
-                    "-l"
-                },
+                new String[0],
                 environment,
                 2000,
                 this
             );
 
-        /*
-         * Give the emulator an initial geometry.
-         * TerminalView will resize it when the real
-         * Android view dimensions are known.
-         */
         terminalSession.initializeEmulator(
             80,
             24,
@@ -153,12 +182,16 @@ public class AppForgeActivity extends Activity
         );
 
         terminalView.setTextSize(18);
-
         terminalView.requestFocus();
 
         terminalView.postDelayed(
             this::showKeyboard,
-            250
+            300
+        );
+
+        Log.i(
+            TAG,
+            "Independent AppForge terminal started"
         );
     }
 
@@ -167,7 +200,9 @@ public class AppForgeActivity extends Activity
 
         InputMethodManager keyboard =
             (InputMethodManager)
-                getSystemService(INPUT_METHOD_SERVICE);
+                getSystemService(
+                    INPUT_METHOD_SERVICE
+                );
 
         if (keyboard != null) {
             keyboard.showSoftInput(
@@ -186,12 +221,10 @@ public class AppForgeActivity extends Activity
         );
     }
 
-    /*
-     * Hardware Volume Down becomes a temporary
-     * Ctrl modifier while held.
-     */
     @Override
-    public boolean dispatchKeyEvent(KeyEvent event) {
+    public boolean dispatchKeyEvent(
+        KeyEvent event
+    ) {
         if (
             event.getKeyCode()
                 == KeyEvent.KEYCODE_VOLUME_DOWN
@@ -206,17 +239,15 @@ public class AppForgeActivity extends Activity
         return super.dispatchKeyEvent(event);
     }
 
-    /*
-     * TerminalViewClient
-     */
-
     @Override
     public float onScale(float scale) {
         return 1.0f;
     }
 
     @Override
-    public void onSingleTapUp(MotionEvent event) {
+    public void onSingleTapUp(
+        MotionEvent event
+    ) {
         showKeyboard();
     }
 
@@ -241,7 +272,9 @@ public class AppForgeActivity extends Activity
     }
 
     @Override
-    public void copyModeChanged(boolean copyMode) {
+    public void copyModeChanged(
+        boolean copyMode
+    ) {
     }
 
     @Override
@@ -262,7 +295,9 @@ public class AppForgeActivity extends Activity
     }
 
     @Override
-    public boolean onLongPress(MotionEvent event) {
+    public boolean onLongPress(
+        MotionEvent event
+    ) {
         return false;
     }
 
@@ -299,10 +334,6 @@ public class AppForgeActivity extends Activity
     public void onEmulatorSet() {
     }
 
-    /*
-     * TerminalSessionClient
-     */
-
     @Override
     public void onTextChanged(
         @NonNull TerminalSession changedSession
@@ -322,7 +353,10 @@ public class AppForgeActivity extends Activity
     public void onSessionFinished(
         @NonNull TerminalSession finishedSession
     ) {
-        Log.i(TAG, "Terminal session finished");
+        Log.i(
+            TAG,
+            "Terminal session finished"
+        );
     }
 
     @Override
@@ -332,7 +366,9 @@ public class AppForgeActivity extends Activity
     ) {
         ClipboardManager clipboard =
             (ClipboardManager)
-                getSystemService(CLIPBOARD_SERVICE);
+                getSystemService(
+                    CLIPBOARD_SERVICE
+                );
 
         if (clipboard != null) {
             clipboard.setPrimaryClip(
@@ -386,11 +422,6 @@ public class AppForgeActivity extends Activity
     public Integer getTerminalCursorStyle() {
         return null;
     }
-
-    /*
-     * Shared logging methods required by
-     * TerminalViewClient and TerminalSessionClient.
-     */
 
     @Override
     public void logError(

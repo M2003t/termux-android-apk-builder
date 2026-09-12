@@ -136,66 +136,36 @@ print("Target ABI: arm64-v8a")
 print("Native libraries installed into:")
 print(jni_dir)
 
-# APPFORGE_LAUNCHER_PATCH
+# APPFORGE_IDENTITY_PATCH
 
-manifest = (
-    staging
-    / "app"
-    / "src"
-    / "main"
-    / "AndroidManifest.xml"
+app_gradle = staging / "app" / "build.gradle"
+gradle_text = app_gradle.read_text()
+
+appforge_application_id = 'io.github.m2003t.appforge'
+
+application_id_line = (
+    '        applicationId "' +
+    appforge_application_id +
+    '"\n'
 )
 
-text = manifest.read_text()
+if application_id_line not in gradle_text:
+    default_config = "    defaultConfig {\n"
 
-old_launcher_filter = """            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
+    if default_config not in gradle_text:
+        raise RuntimeError(
+            "Gradle defaultConfig block was not found."
+        )
 
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-"""
-
-if old_launcher_filter not in text:
-    raise RuntimeError(
-        "Original Termux launcher intent-filter was not found."
+    gradle_text = gradle_text.replace(
+        default_config,
+        default_config + application_id_line,
+        1
     )
 
-# Remove the normal phone launcher from TermuxActivity.
-text = text.replace(
-    old_launcher_filter,
-    "",
-    1
+app_gradle.write_text(gradle_text)
+
+print(
+    "AppForge applicationId: " +
+    appforge_application_id
 )
-
-termux_activity = """        <activity
-            android:name=".app.TermuxActivity\""""
-
-appforge_activity = """        <activity
-            android:name="com.termux.app.AppForgeActivity"
-            android:exported="true"
-            android:label="Termux AppForge"
-            android:theme="@style/Theme.TermuxActivity.DayNight.NoActionBar">
-
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-
-        </activity>
-
-"""
-
-if termux_activity not in text:
-    raise RuntimeError(
-        "TermuxActivity manifest entry was not found."
-    )
-
-text = text.replace(
-    termux_activity,
-    appforge_activity + termux_activity,
-    1
-)
-
-manifest.write_text(text)
-
-print("AppForge launcher installed into staging.")
