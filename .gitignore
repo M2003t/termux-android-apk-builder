@@ -3,3 +3,7 @@ local_data/
 build/
 
 build/
+
+# Python bytecode
+__pycache__/
+*.pyc
