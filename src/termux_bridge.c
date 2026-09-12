@@ -4,6 +4,10 @@
 
 struct android_app *GetAndroidApp(void);
 
+#define TERMUX_PERMISSION "com.termux.permission.RUN_COMMAND"
+#define PERMISSION_GRANTED 0
+#define REQUEST_CODE_TERMUX 1001
+
 static int check_exception(JNIEnv *env) {
     if ((*env)->ExceptionCheck(env)) {
         (*env)->ExceptionClear(env);
@@ -12,32 +16,171 @@ static int check_exception(JNIEnv *env) {
     return 0;
 }
 
-int termux_run_test(void) {
+static JNIEnv *get_env(JavaVM *vm, int *attached) {
+    JNIEnv *env = NULL;
+    *attached = 0;
+
+    if ((*vm)->GetEnv(vm, (void **)&env, JNI_VERSION_1_6) != JNI_OK) {
+        if ((*vm)->AttachCurrentThread(vm, &env, NULL) != JNI_OK)
+            return NULL;
+
+        *attached = 1;
+    }
+
+    return env;
+}
+
+int termux_permission_status(void) {
     struct android_app *app = GetAndroidApp();
 
-    if (!app || !app->activity) return -1;
+    if (!app || !app->activity)
+        return -1;
 
     JavaVM *vm = app->activity->vm;
     jobject activity = app->activity->clazz;
 
-    JNIEnv *env = NULL;
     int attached = 0;
+    JNIEnv *env = get_env(vm, &attached);
 
-    if ((*vm)->GetEnv(vm, (void **)&env, JNI_VERSION_1_6) != JNI_OK) {
-        if ((*vm)->AttachCurrentThread(vm, (void **)&env, NULL) != JNI_OK)
-            return -2;
+    if (!env)
+        return -2;
 
-        attached = 1;
-    }
+    jclass activityClass =
+        (*env)->GetObjectClass(env, activity);
 
-    jclass intentClass = (*env)->FindClass(env, "android/content/Intent");
-    if (!intentClass || check_exception(env)) return -3;
+    jmethodID checkPermission =
+        (*env)->GetMethodID(
+            env,
+            activityClass,
+            "checkSelfPermission",
+            "(Ljava/lang/String;)I"
+        );
+
+    if (!checkPermission || check_exception(env))
+        return -3;
+
+    jstring permission =
+        (*env)->NewStringUTF(env, TERMUX_PERMISSION);
+
+    jint result =
+        (*env)->CallIntMethod(
+            env,
+            activity,
+            checkPermission,
+            permission
+        );
+
+    if (check_exception(env))
+        return -4;
+
+    if (attached)
+        (*vm)->DetachCurrentThread(vm);
+
+    return result == PERMISSION_GRANTED ? 1 : 0;
+}
+
+int termux_request_permission(void) {
+    struct android_app *app = GetAndroidApp();
+
+    if (!app || !app->activity)
+        return -1;
+
+    JavaVM *vm = app->activity->vm;
+    jobject activity = app->activity->clazz;
+
+    int attached = 0;
+    JNIEnv *env = get_env(vm, &attached);
+
+    if (!env)
+        return -2;
+
+    jclass activityClass =
+        (*env)->GetObjectClass(env, activity);
+
+    jmethodID requestPermissions =
+        (*env)->GetMethodID(
+            env,
+            activityClass,
+            "requestPermissions",
+            "([Ljava/lang/String;I)V"
+        );
+
+    if (!requestPermissions || check_exception(env))
+        return -3;
+
+    jclass stringClass =
+        (*env)->FindClass(env, "java/lang/String");
+
+    jobjectArray permissions =
+        (*env)->NewObjectArray(
+            env,
+            1,
+            stringClass,
+            NULL
+        );
+
+    jstring permission =
+        (*env)->NewStringUTF(env, TERMUX_PERMISSION);
+
+    (*env)->SetObjectArrayElement(
+        env,
+        permissions,
+        0,
+        permission
+    );
+
+    (*env)->CallVoidMethod(
+        env,
+        activity,
+        requestPermissions,
+        permissions,
+        REQUEST_CODE_TERMUX
+    );
+
+    if (check_exception(env))
+        return -4;
+
+    if (attached)
+        (*vm)->DetachCurrentThread(vm);
+
+    return 0;
+}
+
+int termux_run_test(void) {
+    struct android_app *app = GetAndroidApp();
+
+    if (!app || !app->activity)
+        return -1;
+
+    JavaVM *vm = app->activity->vm;
+    jobject activity = app->activity->clazz;
+
+    int attached = 0;
+    JNIEnv *env = get_env(vm, &attached);
+
+    if (!env)
+        return -2;
+
+    jclass intentClass =
+        (*env)->FindClass(env, "android/content/Intent");
+
+    if (!intentClass || check_exception(env))
+        return -3;
 
     jmethodID intentCtor =
-        (*env)->GetMethodID(env, intentClass, "<init>", "()V");
+        (*env)->GetMethodID(
+            env,
+            intentClass,
+            "<init>",
+            "()V"
+        );
 
     jobject intent =
-        (*env)->NewObject(env, intentClass, intentCtor);
+        (*env)->NewObject(
+            env,
+            intentClass,
+            intentCtor
+        );
 
     jmethodID setClassName =
         (*env)->GetMethodID(
@@ -79,22 +222,28 @@ int termux_run_test(void) {
             "(Ljava/lang/String;Z)Landroid/content/Intent;"
         );
 
-    jstring termuxPackage =
+    jstring pkg =
         (*env)->NewStringUTF(env, "com.termux");
 
-    jstring serviceName =
-        (*env)->NewStringUTF(env, "com.termux.app.RunCommandService");
+    jstring service =
+        (*env)->NewStringUTF(
+            env,
+            "com.termux.app.RunCommandService"
+        );
 
     (*env)->CallObjectMethod(
         env,
         intent,
         setClassName,
-        termuxPackage,
-        serviceName
+        pkg,
+        service
     );
 
     jstring action =
-        (*env)->NewStringUTF(env, "com.termux.RUN_COMMAND");
+        (*env)->NewStringUTF(
+            env,
+            "com.termux.RUN_COMMAND"
+        );
 
     (*env)->CallObjectMethod(
         env,
@@ -104,7 +253,10 @@ int termux_run_test(void) {
     );
 
     jstring pathKey =
-        (*env)->NewStringUTF(env, "com.termux.RUN_COMMAND_PATH");
+        (*env)->NewStringUTF(
+            env,
+            "com.termux.RUN_COMMAND_PATH"
+        );
 
     jstring bashPath =
         (*env)->NewStringUTF(
@@ -121,10 +273,18 @@ int termux_run_test(void) {
     );
 
     jclass stringClass =
-        (*env)->FindClass(env, "java/lang/String");
+        (*env)->FindClass(
+            env,
+            "java/lang/String"
+        );
 
     jobjectArray args =
-        (*env)->NewObjectArray(env, 2, stringClass, NULL);
+        (*env)->NewObjectArray(
+            env,
+            2,
+            stringClass,
+            NULL
+        );
 
     jstring arg0 =
         (*env)->NewStringUTF(env, "-lc");
@@ -135,8 +295,19 @@ int termux_run_test(void) {
             "echo 'Hello from Termux AppForge' > ~/termux_appforge_bridge_test.txt"
         );
 
-    (*env)->SetObjectArrayElement(env, args, 0, arg0);
-    (*env)->SetObjectArrayElement(env, args, 1, arg1);
+    (*env)->SetObjectArrayElement(
+        env,
+        args,
+        0,
+        arg0
+    );
+
+    (*env)->SetObjectArrayElement(
+        env,
+        args,
+        1,
+        arg1
+    );
 
     jstring argsKey =
         (*env)->NewStringUTF(
@@ -166,7 +337,8 @@ int termux_run_test(void) {
         JNI_TRUE
     );
 
-    if (check_exception(env)) return -4;
+    if (check_exception(env))
+        return -4;
 
     jclass activityClass =
         (*env)->GetObjectClass(env, activity);

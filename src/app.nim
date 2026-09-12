@@ -5,52 +5,41 @@ const buildId {.strdefine.} = "development"
 
 initWindow(800, 450, "Termux AppForge")
 
-let termuxConnected = runTermuxTest()
+var statusText = "Checking Termux permission..."
+var statusColor = DARKGRAY
+
+if hasTermuxPermission():
+  if runTermuxTest():
+    statusText = "Termux connected"
+    statusColor = DARKGREEN
+  else:
+    statusText = "Termux command failed"
+    statusColor = RED
+else:
+  discard requestTermuxPermission()
+  statusText = "Termux permission requested"
+  statusColor = ORANGE
 
 while not windowShouldClose():
   beginDrawing()
   clearBackground(RAYWHITE)
 
-  drawText(
-    "Termux AppForge",
-    40,
-    40,
-    32,
-    BLACK
-  )
+  drawText("Termux AppForge", 40, 40, 32, BLACK)
 
   drawText(
     "Native Android development on your phone.",
-    40,
-    100,
-    20,
-    DARKGRAY
+    40, 100, 20, DARKGRAY
   )
 
   drawText(
     "Build ID: " & buildId,
-    40,
-    160,
-    18,
-    GRAY
+    40, 160, 18, GRAY
   )
 
-  if termuxConnected:
-    drawText(
-      "Termux command sent successfully",
-      40,
-      210,
-      20,
-      DARKGREEN
-    )
-  else:
-    drawText(
-      "Termux connection failed",
-      40,
-      210,
-      20,
-      RED
-    )
+  drawText(
+    statusText,
+    40, 210, 20, statusColor
+  )
 
   endDrawing()
 
