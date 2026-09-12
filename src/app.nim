@@ -1,8 +1,11 @@
 import raylib
+import termux_bridge
 
 const buildId {.strdefine.} = "development"
 
 initWindow(800, 450, "Termux AppForge")
+
+let termuxConnected = runTermuxTest()
 
 while not windowShouldClose():
   beginDrawing()
@@ -31,6 +34,23 @@ while not windowShouldClose():
     18,
     GRAY
   )
+
+  if termuxConnected:
+    drawText(
+      "Termux command sent successfully",
+      40,
+      210,
+      20,
+      DARKGREEN
+    )
+  else:
+    drawText(
+      "Termux connection failed",
+      40,
+      210,
+      20,
+      RED
+    )
 
   endDrawing()
 
